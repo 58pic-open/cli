@@ -20,7 +20,7 @@
     "skills"
   ],
   "scripts": {
-    "build": "npx tsc",
+    "build": "node node_modules/typescript/lib/tsc.js",
     "dev": "tsx src/cli.ts",
     "cli": "node dist/cli.js",
     "prepare": "npm run build",

@@ -235,9 +235,16 @@ npx skills add 58pic-open/cli --skill 58pic -y -g -a cursor
 
 3. **已执行过 `npm link` 仍找不到**：同样检查第 1 步；`which npm`、`which node` 应对应同一套安装，避免混用多套 Node。
 
-### `npm install -g github:58pic-open/cli` 报错 `tsc: command not found`（code 127）
+### `npm install -g github:58pic-open/cli` 安装阶段报错（`tsc` / code 127 / code 254）
 
-全局从 GitHub 安装时会执行 `prepare` → `npm run build` 编译 `dist/`。若环境未把本地 `node_modules/.bin` 里的 `tsc` 放进 PATH，会失败。**当前版本**已将 `typescript` 作为正式依赖，并将构建脚本改为 `npx tsc`，一般可消除该问题。请拉取**最新** `main` 后再执行：
+全局从 GitHub 安装时会执行 `prepare` → `npm run build` 编译 `dist/`。
+
+| 现象 | 原因（常见） |
+|------|----------------|
+| `tsc: command not found`（127） | 仅用命令名 `tsc` 时，部分环境未把 `node_modules/.bin` 加入 PATH。 |
+| `npx` 提示安装 `tsc@2.0.4` 随后 `ENOENT`（254） | npm 上另有名为 **`tsc`** 的包，与 **TypeScript 编译器** 无关；`npx tsc` 会去装错包或踩缓存问题。 |
+
+**当前版本**的构建脚本改为直接调用依赖包内的编译器：`node node_modules/typescript/lib/tsc.js`（`typescript` 已列为正式依赖）。请拉取**最新** `main` 后再执行：
 
 ```bash
 npm install -g github:58pic-open/cli

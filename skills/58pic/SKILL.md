@@ -1,5 +1,5 @@
 ---
-name: qiantu-58pic
+name: 58pic
 description: >-
   千图（58pic）AI 开放平台 CLI：素材搜索、目录、模型列表、按 pid 下载信息、做同款任务。
   在用户提到千图/58pic 搜索、做同款、PID、下载素材时使用；首次使用需完成 config / API Key。
@@ -18,7 +18,7 @@ npx skills add 58pic-open/cli -y -g
 ```
 
 查看本仓库提供的 Skill 列表（不安装）：`npx skills add 58pic-open/cli --list`  
-仅安装本 Skill：`npx skills add 58pic-open/cli --skill qiantu-58pic -y -g`
+仅安装本 Skill：`npx skills add 58pic-open/cli --skill 58pic -y -g`
 
 **须先安装 `58pic` 可执行文件**（`npm install -g @58pic/cli` 或 `npm install -g github:58pic-open/cli`）；Skill 不会替代 CLI，只指导 Agent 如何调用命令行。
 

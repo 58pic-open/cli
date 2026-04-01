@@ -11,8 +11,8 @@ export type Pic58Config = {
 
 function configDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
-  if (xdg) return join(xdg, "pic58");
-  return join(homedir(), ".config", "pic58");
+  if (xdg) return join(xdg, "58pic");
+  return join(homedir(), ".config", "58pic");
 }
 
 export function configPath(): string {

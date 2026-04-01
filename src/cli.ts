@@ -21,7 +21,7 @@ const pkg = JSON.parse(
 
 function addGlobalOpts(cmd: Command): Command {
   return cmd
-    .option("--api-key <key>", "API Key（或环境变量 PIC58_API_KEY）")
+    .option("--api-key <key>", "API Key（或环境变量 58PIC_API_KEY）")
     .option("--base-url <url>", `API 根地址，默认 ${DEFAULT_BASE}`)
     .option(
       "-f, --format <fmt>",
@@ -45,7 +45,7 @@ async function getCtx(
 async function main(): Promise<void> {
   const program = new Command();
   program
-    .name("pic58")
+    .name("58pic")
     .description("千图 AI 开放平台 CLI（分层：配置 / 快捷命令 / 通用 api 调用）")
     .version(pkg.version);
 
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
 
   configCmd
     .command("init")
-    .description("交互式写入 ~/.config/pic58/config.json（或 XDG_CONFIG_HOME）")
+    .description("交互式写入 ~/.config/58pic/config.json（或 XDG_CONFIG_HOME）")
     .option("--api-key <key>", "非交互：直接写入 Key")
     .option("--base-url <url>", `默认 ${DEFAULT_BASE}`)
     .action(async (o: { apiKey?: string; baseUrl?: string }) => {
@@ -98,26 +98,22 @@ async function main(): Promise<void> {
 
   program
     .command("auth")
-    .description("别名：查看配置状态（对齐 lark-cli auth status 习惯）")
+    .description("别名：查看配置与凭证状态（类似常见 CLI 的 auth status）")
     .command("status")
-    .description("等价于 pic58 config show")
+    .description("等价于 58pic config show")
     .action(async () => {
       const c = await loadConfig();
       const has = Boolean(
-        c.apiKey ??
-          process.env.PIC58_API_KEY ??
-          process.env["58PIC_API_KEY"]
+        c.apiKey ?? process.env["58PIC_API_KEY"]
       );
       console.log(
         JSON.stringify(
           {
             loggedIn: has,
             apiKey: maskKey(
-              c.apiKey ??
-                process.env.PIC58_API_KEY ??
-                process.env["58PIC_API_KEY"]
+              c.apiKey ?? process.env["58PIC_API_KEY"]
             ),
-            baseUrl: c.baseUrl ?? process.env.PIC58_BASE_URL ?? DEFAULT_BASE,
+            baseUrl: c.baseUrl ?? process.env["58PIC_BASE_URL"] ?? DEFAULT_BASE,
             configPath: configPath(),
           },
           null,
@@ -232,7 +228,7 @@ async function main(): Promise<void> {
     .description("快捷：提交做同款任务（复杂参数请用 --body-file）");
   addGlobalOpts(sameStyle);
   sameStyle
-    .requiredOption("-m, --model <id>", "模型 ID（可先 pic58 models）")
+    .requiredOption("-m, --model <id>", "模型 ID（可先 58pic models）")
     .option("--reference-url <url>", "单张垫图 URL")
     .option("--picid <pid>", "素材 pid（可选）")
     .option("--prompt <text>", "描述词 / ai_title")

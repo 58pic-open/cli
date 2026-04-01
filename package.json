@@ -7,16 +7,23 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "pic58": "dist/cli.js",
-    "pic58-cli": "dist/cli.js"
+    "58pic": "dist/cli.js",
+    "58pic-cli": "dist/cli.js"
   },
   "main": "dist/cli.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/58pic-open/cli.git"
+  },
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli.ts",
+    "cli": "node dist/cli.js",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

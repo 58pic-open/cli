@@ -62,18 +62,15 @@ export function resolveCredentials(
   file: Pic58Config
 ): { apiKey: string; baseUrl: string } {
   const apiKey =
-    flags.apiKey ??
-    process.env.PIC58_API_KEY ??
-    process.env["58PIC_API_KEY"] ??
-    file.apiKey;
+    flags.apiKey ?? process.env["58PIC_API_KEY"] ?? file.apiKey;
   if (!apiKey) {
     throw new Error(
-      "缺少 API Key：设置环境变量 PIC58_API_KEY，或执行 pic58 config init，或使用 --api-key"
+      "缺少 API Key：设置环境变量 58PIC_API_KEY，或执行 58pic config init，或使用 --api-key"
     );
   }
   const baseUrl =
     flags.baseUrl ??
-    process.env.PIC58_BASE_URL ??
+    process.env["58PIC_BASE_URL"] ??
     file.baseUrl ??
     DEFAULT_BASE;
   return { apiKey, baseUrl };

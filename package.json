@@ -23,7 +23,6 @@
     "build": "node node_modules/typescript/lib/tsc.js",
     "dev": "tsx src/cli.ts",
     "cli": "node dist/cli.js",
-    "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -34,11 +33,11 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "commander": "^11.1.0",
-    "typescript": "~4.9.5"
+    "commander": "^11.1.0"
   },
   "devDependencies": {
     "@types/node": "^18.19.0",
-    "tsx": "^4.19.3"
+    "tsx": "^4.19.3",
+    "typescript": "~4.9.5"
   }
 }

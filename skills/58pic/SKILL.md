@@ -15,11 +15,13 @@ description: >-
 使用开源 [**skills** CLI](https://github.com/vercel-labs/skills)（`npx skills`）将仓库内 `skills/` 安装到 Cursor、Claude Code、Codex 等 Agent 目录：
 
 ```bash
-npx skills add https://github.com/58pic-open/cli -y -g
+npm install -g @58pic/cli
+npx skills add 58pic/cli -y -g
 ```
 
-查看本仓库提供的 Skill 列表（不安装）：`npx skills add https://github.com/58pic-open/cli --list`  
-仅安装本 Skill：`npx skills add https://github.com/58pic-open/cli --skill 58pic -y -g`
+查看本仓库提供的 Skill 列表（不安装）：`npx skills add 58pic/cli --list`  
+仅安装本 Skill：`npx skills add 58pic/cli --skill 58pic -y -g`  
+若短名克隆失败，可改用 `58pic-open/cli` 或 `https://github.com/58pic-open/cli`。
 
 **须先安装 `58pic` 可执行文件**（`npm install -g @58pic/cli` 或 `npm install -g github:58pic-open/cli`）；Skill 不会替代 CLI，只指导 Agent 如何调用命令行。
 
@@ -35,7 +37,7 @@ npx skills add https://github.com/58pic-open/cli -y -g
 
 ## 调用方式（Agent 必做）
 
-1. 确认已安装：`58pic --help`（失败则按 README 执行 `npm install -g github:58pic-open/cli` 等）。
+1. 确认已安装：`58pic --help`（失败则按 README 执行 `npm install -g @58pic/cli` 或 `github:58pic-open/cli`）。
 2. 确认凭证：`58pic auth status`；**若无 Key，必须先按上文「缺少 API Key 时」引导用户获取**，再 `58pic config init --api-key "<key>"`（勿把 Key 写入可被提交的仓库）。
 3. 自动化解析响应时加 **`--format json`**。
 4. 可能扣点的接口（下载、做同款等）先用 **`58pic dry-run …`** 或提醒用户确认。

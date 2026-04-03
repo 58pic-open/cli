@@ -16,12 +16,12 @@ description: >-
 
 ```bash
 npm install -g @58pic/cli
-npx skills add 58pic/cli -y -g
+npx skills add 58pic-open/cli -y -g
 ```
 
-查看本仓库提供的 Skill 列表（不安装）：`npx skills add 58pic/cli --list`  
-仅安装本 Skill：`npx skills add 58pic/cli --skill 58pic -y -g`  
-若短名克隆失败，可改用 `58pic-open/cli` 或 `https://github.com/58pic-open/cli`。
+查看本仓库提供的 Skill 列表（不安装）：`npx skills add 58pic-open/cli --list`  
+仅安装本 Skill：`npx skills add 58pic-open/cli --skill 58pic -y -g`  
+亦可使用完整仓库地址 `https://github.com/58pic-open/cli`。
 
 **须先安装 `58pic` 可执行文件**（`npm install -g @58pic/cli` 或 `npm install -g github:58pic-open/cli`）；Skill 不会替代 CLI，只指导 Agent 如何调用命令行。
 

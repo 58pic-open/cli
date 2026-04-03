@@ -210,6 +210,10 @@ npx skills add 58pic/cli --skill 58pic -y -g -a cursor
 
 ## 常见问题
 
+### 包名是 `@58pic/cli` 不是 `@58cpi/cli`
+
+npm 上的 scope 为 **`@58pic/cli`**（**58pic** = 千图）。若误写成 `@58cpi/cli` 会安装失败。
+
 ### 如何获取 API Key？
 
 在浏览器登录后打开 **[千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5)** 获取 Key，再执行 `58pic config init`（或 `58pic config init --api-key "<key>"`）。具体以官网为准。
@@ -378,6 +382,6 @@ Use the official registry `https://registry.npmjs.org/` if a mirror returns 404 
 
 **Agents:** Install Skills with `npx skills add 58pic/cli -y -g`, then run **`58pic` in the terminal** as documented in [`skills/58pic/SKILL.md`](skills/58pic/SKILL.md).
 
-**FAQ:** If you see `command not found: 58pic` / `58pic-cli`, add `$(npm prefix -g)/bin` to `PATH` (see the **常见问题** section in the Chinese part above).
+**FAQ:** The npm package is **`@58pic/cli`** (58**pic**), not `@58cpi/cli`. If you see `command not found: 58pic` / `58pic-cli`, add `$(npm prefix -g)/bin` to `PATH` (see **常见问题** above).
 
 See the Chinese section above for the full command table, Agent flow, and options.

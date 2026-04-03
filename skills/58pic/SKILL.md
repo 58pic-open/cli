@@ -15,11 +15,11 @@ description: >-
 使用开源 [**skills** CLI](https://github.com/vercel-labs/skills)（`npx skills`）将仓库内 `skills/` 安装到 Cursor、Claude Code、Codex 等 Agent 目录：
 
 ```bash
-npx skills add 58pic-open/cli -y -g
+npx skills add https://github.com/58pic-open/cli -y -g
 ```
 
-查看本仓库提供的 Skill 列表（不安装）：`npx skills add 58pic-open/cli --list`  
-仅安装本 Skill：`npx skills add 58pic-open/cli --skill 58pic -y -g`
+查看本仓库提供的 Skill 列表（不安装）：`npx skills add https://github.com/58pic-open/cli --list`  
+仅安装本 Skill：`npx skills add https://github.com/58pic-open/cli --skill 58pic -y -g`
 
 **须先安装 `58pic` 可执行文件**（`npm install -g @58pic/cli` 或 `npm install -g github:58pic-open/cli`）；Skill 不会替代 CLI，只指导 Agent 如何调用命令行。
 

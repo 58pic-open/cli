@@ -3,6 +3,7 @@ name: 58pic
 description: >-
   千图（58pic）AI 开放平台 CLI：素材搜索、目录、模型列表、按 pid 下载信息、做同款任务。
   在用户提到千图/58pic 搜索、做同款、PID、下载素材时使用；首次使用需完成 config / API Key。
+  若无 API Key，引导用户至千图 AI 开放平台页面获取。
 ---
 
 # 58pic-cli（千图开放平台）
@@ -24,10 +25,18 @@ npx skills add 58pic-open/cli -y -g
 
 千图开放平台使用 **API Key** 认证，无 OAuth 浏览器流程。CLI 提供 `config init`、`auth status`、`dry-run` 等常用能力。
 
+### 缺少 API Key 时（Agent 必提醒用户）
+
+若 `58pic auth status` 显示未配置、或命令报错提示缺少 API Key：**不要猜测或编造 Key**。请明确告知用户前往千图 AI 开放平台获取 Key，并在浏览器中登录后打开：
+
+**[https://ai.58pic.com/history?openHistory=1&historyType=5](https://ai.58pic.com/history?openHistory=1&historyType=5)**
+
+用户取得 Key 后，再执行 `58pic config init --api-key "<用户的 Key>"`（或交互式 `58pic config init`）。勿把 Key 写入可被提交的仓库。
+
 ## 调用方式（Agent 必做）
 
 1. 确认已安装：`58pic --help`（失败则按 README 执行 `npm install -g github:58pic-open/cli` 等）。
-2. 确认凭证：`58pic auth status`；未配置则 `58pic config init --api-key "<key>"`（勿把 Key 写入可被提交的仓库）。
+2. 确认凭证：`58pic auth status`；**若无 Key，必须先按上文「缺少 API Key 时」引导用户获取**，再 `58pic config init --api-key "<key>"`（勿把 Key 写入可被提交的仓库）。
 3. 自动化解析响应时加 **`--format json`**。
 4. 可能扣点的接口（下载、做同款等）先用 **`58pic dry-run …`** 或提醒用户确认。
 

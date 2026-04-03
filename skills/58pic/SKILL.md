@@ -6,7 +6,7 @@ description: >-
   若无 API Key，引导用户至千图 AI 开放平台页面获取。
 ---
 
-# 58pic-cli（千图开放平台）
+# 58pic-cli（[千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5)）
 
 本 Skill 与仓库根目录 **README.md** 保持一致；**实际请求由终端中的 `58pic` 命令发出**，Agent 应通过 **执行 shell 命令** 调用，而不是在对话里伪造 HTTP。
 
@@ -23,14 +23,13 @@ npx skills add https://github.com/58pic-open/cli -y -g
 
 **须先安装 `58pic` 可执行文件**（`npm install -g @58pic/cli` 或 `npm install -g github:58pic-open/cli`）；Skill 不会替代 CLI，只指导 Agent 如何调用命令行。
 
-千图开放平台使用 **API Key** 认证，无 OAuth 浏览器流程。CLI 提供 `config init`、`auth status`、`dry-run` 等常用能力。
+[千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5) 使用 **API Key** 认证，无 OAuth 浏览器流程。CLI 提供 `config init`、`auth status`、`dry-run` 等常用能力。
 
 ### 缺少 API Key 时（Agent 必提醒用户）
 
 若 `58pic auth status` 显示未配置、或命令报错提示缺少 API Key：**不要猜测或编造 Key**。
 
-**获取 API Key 地址（须先登录千图 AI）：**  
-[https://ai.58pic.com/history?openHistory=1&historyType=5](https://ai.58pic.com/history?openHistory=1&historyType=5)
+**获取 API Key（须先登录）：** [千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5)
 
 用户取得 Key 后，再执行 `58pic config init --api-key "<用户的 Key>"`（或交互式 `58pic config init`）。勿把 Key 写入可被提交的仓库。
 

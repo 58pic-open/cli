@@ -27,9 +27,10 @@ npx skills add https://github.com/58pic-open/cli -y -g
 
 ### 缺少 API Key 时（Agent 必提醒用户）
 
-若 `58pic auth status` 显示未配置、或命令报错提示缺少 API Key：**不要猜测或编造 Key**。请明确告知用户前往千图 AI 开放平台获取 Key，并在浏览器中登录后打开：
+若 `58pic auth status` 显示未配置、或命令报错提示缺少 API Key：**不要猜测或编造 Key**。
 
-**[https://ai.58pic.com/history?openHistory=1&historyType=5](https://ai.58pic.com/history?openHistory=1&historyType=5)**
+**获取 API Key 地址（须先登录千图 AI）：**  
+[https://ai.58pic.com/history?openHistory=1&historyType=5](https://ai.58pic.com/history?openHistory=1&historyType=5)
 
 用户取得 Key 后，再执行 `58pic config init --api-key "<用户的 Key>"`（或交互式 `58pic config init`）。勿把 Key 写入可被提交的仓库。
 

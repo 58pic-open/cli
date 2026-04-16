@@ -1,4 +1,4 @@
-# 58pic-cli（@58pic/cli）
+# 58pic（@58pic/cli）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 

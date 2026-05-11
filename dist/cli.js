@@ -160,16 +160,17 @@ async function main() {
     });
     const sameStyle = program
         .command("same-style")
-        .description("快捷：提交做同款任务（复杂参数请用 --body-file）");
+        .description("快捷：提交生图任务（同一接口支持文生图与垫图做同款；仅需 -m；垫图 / pid 可选，复杂参数见 --body-file）");
     addGlobalOpts(sameStyle);
     sameStyle
         .requiredOption("-m, --model <id>", "模型 ID（可先 58pic models）")
-        .option("--reference-url <url>", "单张垫图 URL")
+        .option("--reference-url <url>", "垫图 URL（可选；纯文生图可省略）")
         .option("--picid <pid>", "素材 pid（可选）")
-        .option("--prompt <text>", "描述词 / ai_title")
+        .option("--prompt <text>", "描述词（写入 ai_title / prompt；与末尾描述词并存时本选项优先）")
         .option("--nums <n>", "生成张数 1-16", "1")
         .option("--body-file <path>", "JSON 文件，若指定则与其它体字段合并（文件优先覆盖同名键）")
-        .action(async (opts) => {
+        .argument("[prompt...]", "描述词（多词以空格拼接；文生图只需模型 + 提示词；与 --prompt 并存时 --prompt 优先）")
+        .action(async (promptParts, opts) => {
         const file = await loadConfig();
         const ctx = await getCtx(opts, file);
         let extra = {};
@@ -183,13 +184,25 @@ async function main() {
             generate_nums: Number(opts.nums) || 1,
         };
         Object.assign(body, extra);
-        if (opts.referenceUrl)
+        if (opts.referenceUrl) {
             body.reference_image_url = opts.referenceUrl;
+        }
+        else {
+            const ref = body.reference_image_url;
+            if (ref === "" || ref === null) {
+                delete body.reference_image_url;
+            }
+        }
         if (opts.picid)
             body.picid = opts.picid;
-        if (opts.prompt) {
-            body.ai_title = opts.prompt;
-            body.prompt = opts.prompt;
+        const positional = Array.isArray(promptParts)
+            ? promptParts.join(" ").trim()
+            : "";
+        const flagPrompt = (opts.prompt ?? "").trim();
+        const effectivePrompt = flagPrompt || positional;
+        if (effectivePrompt) {
+            body.ai_title = effectivePrompt;
+            body.prompt = effectivePrompt;
         }
         const { http, body: resp } = await pic58Request(ctx, "same-style", {
             method: "POST",

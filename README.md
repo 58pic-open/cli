@@ -24,7 +24,7 @@
 | 目录 | 素材分类目录 `search-catalog` |
 | 模型 | 可用模型列表 `available-models` |
 | 下载 | 按 `pid` 取预览与下载临时链（涉及扣点，以平台规则为准） |
-| 做同款 | 提交任务、查询状态；复杂 body 可用 `--body-file` |
+| 生图 / 做同款 | 提交任务、查询状态（文生图无需垫图）；复杂 body 可用 `--body-file` |
 | 通用 | 任意 `open-platform/` 路由 + JSON 体或 GET 查询参数 |
 
 ## 环境要求
@@ -283,7 +283,7 @@ Base URL 解析顺序：
 | `58pic catalog` | `open-platform/search-catalog` |
 | `58pic models` | `open-platform/available-models` |
 | `58pic download <pid>` | `open-platform/image-download`（查询参数 `pid`） |
-| `58pic same-style` | `POST` `open-platform/same-style`，需 `-m/--model`，可选垫图、pid、提示词、`--body-file` |
+| `58pic same-style` | `POST` `open-platform/same-style`，需 `-m/--model`；文生图仅需提示词（`--prompt` 或末尾多词）；垫图、pid、`--body-file` 均为可选 |
 | `58pic same-style-status <ai_id>` | `open-platform/same-style-status` |
 
 查看某命令参数：
@@ -291,6 +291,11 @@ Base URL 解析顺序：
 ```bash
 58pic search --help
 58pic same-style --help
+
+# 文生图（不传垫图）
+58pic same-style -m <模型ID> --prompt "一只水彩风格的猫" --format json
+# 或末尾直接跟描述词
+58pic same-style -m <模型ID> 水彩 猫咪 特写 --format json
 ```
 
 ### 2. 通用 `api`（未封装路由）

@@ -2,7 +2,7 @@
 name: 58pic
 description: >-
   千图（58pic）AI 开放平台 CLI：素材搜索、目录、模型列表、按 pid 下载信息、做同款任务。
-  在用户提到千图/58pic 搜索、做同款、PID、下载素材时使用；首次使用需完成 config / API Key。
+  在用户提到千图/58pic 搜索、生图、文生图、做同款、PID、下载素材时使用；首次使用需完成 config / API Key。
   若无 API Key，引导用户至千图 AI 开放平台页面获取。
 ---
 
@@ -51,7 +51,7 @@ npx skills add 58pic-open/cli -y -g
 | 分类目录 | `58pic catalog --format json` |
 | 模型列表 | `58pic models --format json` |
 | 按 pid 拉取下载信息 | `58pic download <pid> --format json` |
-| 做同款 | `58pic same-style --help`（需 `-m/--model`，复杂 body 用 `--body-file`） |
+| 生图 / 文生图 / 做同款 | `58pic same-style --help`（需 `-m/--model`；文生图无需垫图，用 `--prompt` 或命令末尾描述词；复杂 body 用 `--body-file`） |
 | 任务状态 | `58pic same-style-status <ai_id> --format json` |
 | 未封装路由 | `58pic api <route> --body '{...}'` 或 `--body-file` |
 

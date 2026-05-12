@@ -1,6 +1,6 @@
 {
   "name": "@58pic/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "千图 AI 开放平台命令行工具（Open API）",
   "type": "module",
   "engines": {

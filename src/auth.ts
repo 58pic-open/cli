@@ -84,6 +84,79 @@ function generatePkce(): Pkce {
   return { verifier, challenge };
 }
 
+// ---- 回调页面 HTML ----
+
+const CLI_LOGO_URL = "https://ai.58pic.com/static/cli.png";
+
+function callbackHtml(opts: { success: boolean; message?: string }): string {
+  const { success, message } = opts;
+  const accentColor = success ? "#00ff88" : "#f85149";
+  const icon = success ? "✓" : "✕";
+  const title = success ? "授权成功" : "授权失败";
+  const desc = success
+    ? "身份验证完成，你已成功登录千图 AI。"
+    : (message ?? "授权过程中发生错误，请重试。");
+  const prompt = success
+    ? "$ 请关闭此窗口，返回终端继续 ▌"
+    : `$ error: ${message ?? "unknown"} ▌`;
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>58pic CLI — ${title}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      background:#0d1117;
+      color:#c9d1d9;
+      font-family:'SF Mono','Fira Code','Cascadia Code',Consolas,monospace;
+      display:flex;align-items:center;justify-content:center;
+      min-height:100vh;
+    }
+    .card{
+      text-align:center;
+      padding:3em 4em;
+      border:1px solid #21262d;
+      border-radius:12px;
+      background:#161b22;
+      max-width:460px;
+      width:90%;
+      box-shadow:0 0 40px rgba(0,0,0,.6);
+    }
+    .logo{width:72px;height:72px;margin:0 auto 1.6em;display:block;border-radius:8px}
+    .icon{
+      font-size:2em;font-weight:700;
+      color:${accentColor};
+      text-shadow:0 0 12px ${accentColor}88;
+      margin-bottom:.4em;
+    }
+    h2{font-size:1.15em;font-weight:600;color:#f0f6fc;margin-bottom:.6em}
+    p{font-size:.88em;color:#8b949e;line-height:1.7;max-width:320px;margin:0 auto}
+    .prompt{
+      margin-top:1.6em;
+      font-size:.82em;
+      color:${accentColor};
+      background:#0d1117;
+      border:1px solid #30363d;
+      border-radius:6px;
+      padding:.65em 1em;
+      display:inline-block;
+      text-shadow:0 0 6px ${accentColor}66;
+      letter-spacing:.02em;
+    }
+  </style>
+</head><body>
+  <div class="card">
+    <img class="logo" src="${CLI_LOGO_URL}" alt="58pic CLI" onerror="this.style.display='none'">
+    <div class="icon">${icon}</div>
+    <h2>${title}</h2>
+    <p>${desc}</p>
+    <div class="prompt">${prompt}</div>
+  </div>
+</body></html>`;
+}
+
 // ---- 本地回调服务器 ----
 
 interface CallbackServer {
@@ -139,21 +212,14 @@ function createCallbackServer(): Promise<CallbackServer> {
                 const msg = error
                   ? `授权失败：${error}${errorDesc ? " — " + errorDesc : ""}`
                   : "无效的回调参数";
-                resp.end(
-                  `<html><body style="font-family:sans-serif;padding:2em">` +
-                    `<h2>❌ ${msg}</h2><p>请关闭此窗口，返回终端。</p></body></html>`
-                );
+                resp.end(callbackHtml({ success: false, message: msg }));
                 clearTimeout(timer);
                 server.close();
                 rej(new Error(msg));
                 return;
               }
 
-              resp.end(
-                `<html><body style="font-family:sans-serif;padding:2em">` +
-                  `<h2>✅ 授权成功！</h2>` +
-                  `<p>请关闭此窗口，返回终端继续。</p></body></html>`
-              );
+              resp.end(callbackHtml({ success: true }));
               clearTimeout(timer);
               server.close();
               res(code);
@@ -209,6 +275,9 @@ async function registerDynamicClient(
       response_types: ["code"],
       token_endpoint_auth_method: "none",
       scope: "58pic:search 58pic:generate 58pic:download 58pic:credits:read",
+      // 标识来源为 CLI，服务端可据此定制授权页面样式
+      software_id: "@58pic/cli",
+      client_uri: "https://github.com/58pic-open/cli",
     }),
     signal: AbortSignal.timeout(10_000),
   });
@@ -359,6 +428,8 @@ export async function loginWithOAuth(
   authUrl.searchParams.set("code_challenge", pkce.challenge);
   authUrl.searchParams.set("code_challenge_method", "S256");
   authUrl.searchParams.set("state", state);
+  // 标识来源为 CLI，服务端可据此定制授权页面（显示 CLI 专属样式/Logo）
+  authUrl.searchParams.set("source", "cli");
 
   // 5. 打开浏览器
   const urlStr = authUrl.toString();

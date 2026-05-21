@@ -1,0 +1,6 @@
+node_modules/
+*.log
+.DS_Store
+58pic.skill
+*.pyc
+__pycache__/

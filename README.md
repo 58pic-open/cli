@@ -6,25 +6,29 @@
 
 **新手文档（图文快速上手）：** [58pic-cli · 快速上手指南](https://ai.58pic.com/58pic-cli-tutorial.html)
 
-面向 [千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5) 的命令行工具：本地配置、常用接口快捷命令、通用 `api` 透传。支持 `config init`、`auth status`、`--format`、`dry-run` 等与常见开放平台 CLI 相近的用法。**Agent Skills** 通过开源 [**skills** CLI](https://github.com/vercel-labs/skills)（`npx skills add …`）从本仓库 `skills/` 安装到 Cursor、Claude Code 等，步骤见下文 [安装](#安装) 中的 **CLI 与 Agent Skills 配套安装**。
+面向 [千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5) 的命令行工具：本地配置、常用接口快捷命令、通用 `api` 透传。支持 **OAuth 2.1 浏览器登录**与 **API Key** 双模认证，以及 `auth login/logout/status`、`--format`、`dry-run` 等与常见开放平台 CLI 相近的用法。**Agent Skills** 通过开源 [**skills** CLI](https://github.com/vercel-labs/skills)（`npx skills add …`）从本仓库 `skills/` 安装到 Cursor、Claude Code 等，步骤见下文 [安装](#安装) 中的 **CLI 与 Agent Skills 配套安装**。
 
 ## 为什么用 58pic-cli？
 
+- **双模认证** — OAuth 2.1 浏览器登录（token 自动续期）或 API Key，按场景自由选择。
 - **分层清晰** — 配置一次后，优先用快捷命令；未封装的接口走 `58pic api`。
 - **Agent 友好** — `--format json` 便于管道与脚本；`dry-run` 可预览 URL。
-- **凭证灵活** — 配置文件、环境变量、命令行参数优先级明确。
+- **凭证灵活** — OAuth token、环境变量、命令行参数、配置文件，优先级明确。
 - **MIT** — 与上游开放能力条款以千图平台为准。
 
 ## 功能一览
 
 | 领域 | 能力 |
 |------|------|
-| 配置 | 交互/非交互写入配置、脱敏查看、对齐 `auth status` |
+| 认证 | OAuth 2.1 浏览器登录 / 退出 / 状态查看；API Key 配置 |
+| 配置 | 交互/非交互写入配置、脱敏查看 |
 | 搜索 | 关键词搜索、AI 向量搜索、分页与分类参数 |
 | 目录 | 素材分类目录 `search-catalog` |
-| 模型 | 可用模型列表 `available-models` |
+| 模型 | 可用模型列表；查询指定模型的比例 / 分辨率 / 时长选项 |
+| 积分 | 查询账户积分余额与扣点记录 |
 | 下载 | 按 `pid` 取预览与下载临时链（涉及扣点，以平台规则为准） |
-| 生图 / 做同款 | 提交任务、查询状态（文生图无需垫图）；复杂 body 可用 `--body-file` |
+| 生图 / 做同款 | 提交任务、查询状态（文生图无需垫图）；支持比例参数；复杂 body 可用 `--body-file` |
+| 视频生成 | 文生视频 / 图生视频，支持比例 / 清晰度 / 时长 / 结束帧 |
 | 通用 | 任意 `open-platform/` 路由 + JSON 体或 GET 查询参数 |
 
 ## 环境要求
@@ -36,25 +40,31 @@
 
 > **前提：** 本机已能运行 `58pic` 命令。若尚未安装，请先完成下文 [安装](#安装)。
 
-### 1. 配置凭证（一次性）
+### 1. 登录认证（一次性）
 
-**获取 API Key：** 在浏览器登录后打开 [千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5) 获取（页面与能力以官网为准）。
+两种方式任选其一：
 
-交互式写入 `~/.config/58pic/config.json`（或 `XDG_CONFIG_HOME/58pic/config.json`）：
-
-> 若你曾使用旧版 `pic58` 命令，配置在 `~/.config/pic58/`，可手动把该目录改名为 `58pic`，或重新执行 `58pic config init`。
+**方式 A — OAuth 浏览器登录（推荐）**
 
 ```bash
+58pic auth login
+```
+
+自动打开浏览器，完成授权后 token 写入本地配置，过期自动续期，无需手动管理 Key。
+
+**方式 B — API Key**
+
+在浏览器登录后打开 [千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5) 获取 Key，然后：
+
+```bash
+# 交互式
 58pic config init
-```
 
-非交互：
-
-```bash
+# 非交互（适合脚本）
 58pic config init --api-key "<你的 API Key>"
-# 可选
-58pic config init --api-key "<key>" --base-url "https://ai.58pic.com/api"
 ```
+
+> 若你曾使用旧版 `pic58` 命令，配置在 `~/.config/pic58/`，可手动把该目录改名为 `58pic`，或重新执行上述命令。
 
 默认 **Base URL** 为 `https://ai.58pic.com/api`，一般无需修改。
 
@@ -87,9 +97,9 @@
 
 ## 快速开始（AI Agent）
 
-以下步骤面向 AI Agent（Cursor、Claude Code 等）。千图开放平台使用 **API Key** 认证，**无**浏览器 OAuth；Key 若已配置好，可从「验证」一步开始。
+以下步骤面向 AI Agent（Cursor、Claude Code 等）。认证支持 **OAuth 浏览器登录**与 **API Key** 两种方式；若已配置好，可从「验证」一步开始。
 
-> **给 AI 助手：** 先完成「CLI + Skills」两步安装，再配置 Key。详见下文 [安装](#安装) 中的 **CLI 与 Agent Skills 配套安装**。
+> **给 AI 助手：** 先完成「CLI + Skills」两步安装，再配置认证。详见下文 [安装](#安装) 中的 **CLI 与 Agent Skills 配套安装**。
 
 **第 1 步 — 安装 CLI 与 Skills**
 
@@ -99,16 +109,13 @@ npm install -g @58pic/cli
 npx skills add 58pic-open/cli -y -g
 ```
 
-**第 2 步 — 配置凭证**
-
-若无 Key，引导用户至 [千图 AI 开放平台](https://ai.58pic.com/history?openHistory=1&historyType=5) 获取（须先登录）。
+**第 2 步 — 配置认证**
 
 任选其一：
 
-- 交互式（用户在终端完成）：`58pic config init`
-- 非交互（适合脚本 / Agent 代跑）：用户已提供 Key 时执行  
-  `58pic config init --api-key "<API Key>"`  
-  或在支持任意名称的环境注入（Docker、Kubernetes、CI 等）中设置 `58PIC_API_KEY`（见下节；**bash/zsh 的 `export` 不能以数字开头命名变量**，本地终端请优先用配置文件或 `--api-key`）
+- **OAuth 登录**（推荐，token 自动续期）：`58pic auth login`，引导用户在浏览器完成授权后返回终端确认
+- **API Key**：用户已有 Key 时执行 `58pic config init --api-key "<API Key>"`  
+  或在 CI / 容器环境中设置 `58PIC_API_KEY`（**bash/zsh 的 `export` 不能以数字开头命名变量**，本地终端请优先用配置文件或 `--api-key`）
 
 **第 3 步 — 验证**
 
@@ -258,11 +265,12 @@ npm install -g github:58pic-open/cli
 
 ## 认证与凭证优先级
 
-API Key 解析顺序（后者覆盖前者）：
+凭证解析顺序（优先级从高到低）：
 
 1. 命令行 `--api-key`
 2. 环境变量 `58PIC_API_KEY`
-3. 配置文件中的 `apiKey`
+3. 配置文件中的 OAuth token（`oauth.accessToken`，过期自动用 refresh token 续期）
+4. 配置文件中的 `apiKey`
 
 Base URL 解析顺序：
 
@@ -271,31 +279,52 @@ Base URL 解析顺序：
 3. 配置文件 `baseUrl`
 4. 默认 `https://ai.58pic.com/api`
 
-> **说明：** `58PIC_API_KEY`、`58PIC_BASE_URL` 在 Node 进程内可读；在交互式 shell 里无法使用 `export 58PIC_API_KEY=…`（非合法标识符）。本地开发请用 `58pic config init` / `--api-key`，CI 与容器可在编排里正常配置上述名称。
+> **说明：** `58PIC_API_KEY`、`58PIC_BASE_URL` 在 Node 进程内可读；在交互式 shell 里无法使用 `export 58PIC_API_KEY=…`（非合法标识符）。本地开发推荐用 `58pic auth login`（OAuth）或 `58pic config init --api-key`，CI 与容器可在编排里正常配置上述环境变量名称。
 
 ## 三层命令体系
 
 ### 1. 快捷命令（常用 Open API）
+
+**认证**
+
+| 命令 | 说明 |
+|------|------|
+| `58pic auth login` | OAuth 2.1 浏览器授权登录，token 自动续期 |
+| `58pic auth logout` | 撤销 token 并清除本地存储 |
+| `58pic auth status` | 查看当前认证方式（OAuth / API Key / 未登录） |
+| `58pic config init` | 交互 / 非交互写入 API Key |
+| `58pic config show` | 查看当前配置（Key 脱敏） |
+
+**素材 & 模型**
 
 | 命令 | 说明 |
 |------|------|
 | `58pic search [keyword]` | `POST` `open-platform/search-images`，支持 `--page`、`--did`、`--kid`、`--ai` |
 | `58pic catalog` | `open-platform/search-catalog` |
 | `58pic models` | `open-platform/available-models` |
+| `58pic model-capabilities <model_id>` | 查询模型支持的比例 / 分辨率 / 时长选项 |
+| `58pic credits` | 查询账户积分余额与扣点记录 |
 | `58pic download <pid>` | `open-platform/image-download`（查询参数 `pid`） |
-| `58pic same-style` | `POST` `open-platform/same-style`，需 `-m/--model`；文生图仅需提示词（`--prompt` 或末尾多词）；垫图、pid、`--body-file` 均为可选 |
-| `58pic same-style-status <ai_id>` | `open-platform/same-style-status` |
 
-查看某命令参数：
+**生成**
+
+| 命令 | 说明 |
+|------|------|
+| `58pic same-style` | `POST` `open-platform/same-style`，需 `-m/--model`；支持 `--aspect`；垫图、pid、`--body-file` 均为可选 |
+| `58pic same-style-status <ai_id>` | 查询生图任务状态 |
+| `58pic generate-video` | 提交视频生成任务，支持 `--aspect`、`--resolution`、`--duration`、`--end-frame-url` |
+
+查看某命令全部参数：
 
 ```bash
-58pic search --help
+58pic auth login --help
 58pic same-style --help
+58pic generate-video --help
 
-# 文生图（不传垫图）
-58pic same-style -m <模型ID> --prompt "一只水彩风格的猫" --format json
-# 或末尾直接跟描述词
-58pic same-style -m <模型ID> 水彩 猫咪 特写 --format json
+# 文生图
+58pic same-style -m <模型ID> --prompt "一只水彩风格的猫" --aspect "1:1"
+# 视频生成
+58pic generate-video -m <模型ID> --prompt "城市夜景延时" --aspect "16:9" --resolution "1080p"
 ```
 
 ### 2. 通用 `api`（未封装路由）
@@ -362,9 +391,9 @@ MIT。调用千图开放平台接口时，须遵守平台用户协议、隐私�
 
 **Getting started (tutorial):** [58pic-cli quick guide](https://ai.58pic.com/58pic-cli-tutorial.html)
 
-**API Key:** after signing in, open the [Qiantu AI Open Platform](https://ai.58pic.com/history?openHistory=1&historyType=5) page to obtain a key, then run `58pic config init`.
+**58pic-cli** is a CLI for the [Qiantu (58pic) AI Open Platform](https://ai.58pic.com/history?openHistory=1&historyType=5). Supports **OAuth 2.1 browser login** and **API Key** authentication, shortcut commands for search / image & video generation / credits, and a generic `api` passthrough.
 
-**58pic-cli** is a CLI for the [Qiantu (58pic) AI Open Platform](https://ai.58pic.com/history?openHistory=1&historyType=5): `config` / shortcut commands / generic `api` calls. Supports familiar patterns such as `config init`, `auth status`, `--format`, and `dry-run`.
+**Auth:** `58pic auth login` (OAuth, browser-based, auto-refresh) or `58pic config init --api-key "<key>"` (API Key). Check status with `58pic auth status`.
 
 **Requirements:** Node.js ≥ 18. **Git** is required for `npx skills add 58pic-open/cli …` or `npm install -g github:58pic-open/cli`; ensure `git` is on your `PATH`. Global `npm install -g @58pic/cli` alone (no Skills from GitHub) may omit Git.
 
@@ -381,9 +410,9 @@ Use the official registry `https://registry.npmjs.org/` if a mirror returns 404 
 
 **Install (Agent Skills):** [vercel-labs/skills](https://github.com/vercel-labs/skills). `npx skills add 58pic-open/cli -y -g`. List: `npx skills add 58pic-open/cli --list`. Single skill: `npx skills add 58pic-open/cli --skill 58pic -y -g`. Full repo URL `https://github.com/58pic-open/cli` is also supported. Skills live under [`skills/`](skills/) and are included in the npm `files` field.
 
-**Credentials:** `--api-key` → `58PIC_API_KEY` → config file `apiKey`. Base URL: `--base-url` → `58PIC_BASE_URL` → config → default `https://ai.58pic.com/api`.
+**Credentials priority:** `--api-key` flag → `58PIC_API_KEY` env → OAuth token (config) → `apiKey` (config). Base URL: `--base-url` → `58PIC_BASE_URL` → config → default `https://ai.58pic.com/api`.
 
-**Quick examples:** `58pic config init`, `58pic auth status`, `58pic search "keyword"`, `58pic api <route> --body '{}'`.
+**Quick examples:** `58pic auth login`, `58pic auth status`, `58pic search "keyword"`, `58pic same-style -m <id> --prompt "..."`, `58pic generate-video -m <id> --prompt "..."`, `58pic credits`.
 
 **Agents:** Install Skills with `npx skills add 58pic-open/cli -y -g`, then run **`58pic` in the terminal** as documented in [`skills/58pic/SKILL.md`](skills/58pic/SKILL.md).
 

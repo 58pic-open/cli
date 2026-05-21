@@ -86,7 +86,7 @@ function generatePkce(): Pkce {
 
 // ---- 回调页面 HTML ----
 
-const CLI_LOGO_URL = "https://ai.58pic.com/static/cli.png";
+const CLI_LOGO_URL = "https://static.qiantucdn.com/static/canvas/cli.png";
 
 function callbackHtml(opts: { success: boolean; message?: string }): string {
   const { success, message } = opts;

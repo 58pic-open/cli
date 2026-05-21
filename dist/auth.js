@@ -62,7 +62,7 @@ function generatePkce() {
     return { verifier, challenge };
 }
 // ---- 回调页面 HTML ----
-const CLI_LOGO_URL = "https://ai.58pic.com/static/cli.png";
+const CLI_LOGO_URL = "https://static.qiantucdn.com/static/canvas/cli.png";
 function callbackHtml(opts) {
     const { success, message } = opts;
     const accentColor = success ? "#00ff88" : "#f85149";

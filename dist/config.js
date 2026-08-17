@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 export const DEFAULT_BASE = "https://ai.58pic.com/api";
+export const DEFAULT_WORKFLOW_BASE = "https://workflow-api.58pic.com/api";
 function configDir() {
     const xdg = process.env.XDG_CONFIG_HOME;
     if (xdg)

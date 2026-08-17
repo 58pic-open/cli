@@ -4,8 +4,9 @@ import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { Command } from "commander";
-import { loadConfig, saveConfig, clearOAuth, maskKey, configPath, DEFAULT_BASE, } from "./config.js";
+import { loadConfig, saveConfig, clearOAuth, maskKey, configPath, DEFAULT_BASE, DEFAULT_WORKFLOW_BASE, } from "./config.js";
 import { pic58Request, resolveCredentials, routeUrl } from "./client.js";
+import { workflowRequest } from "./workflow.js";
 import { loginWithOAuth, revokeToken } from "./auth.js";
 import { printEnvelope } from "./output.js";
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
@@ -22,6 +23,31 @@ function fmtOf(s) {
 }
 async function getCtx(opts, file) {
     return resolveCredentials(opts, file);
+}
+function addWorkflowOpts(cmd) {
+    return addGlobalOpts(cmd).option("--workflow-base-url <url>", `工作流 API 根地址，默认 ${DEFAULT_WORKFLOW_BASE}`);
+}
+function workflowBaseOf(opts, file) {
+    return (opts.workflowBaseUrl ??
+        process.env["PIC58_WORKFLOW_BASE_URL"] ??
+        file.workflowBaseUrl ??
+        DEFAULT_WORKFLOW_BASE);
+}
+function parseJSONObject(raw, flagName) {
+    const value = JSON.parse(raw);
+    if (!value || Array.isArray(value) || typeof value !== "object") {
+        throw new Error(`${flagName} 必须是 JSON 对象`);
+    }
+    return value;
+}
+function parseWorkflowID(id) {
+    if (!/^\d+$/.test(id))
+        throw new Error("工作流 ID 必须是正整数");
+    const workflowID = Number(id);
+    if (!Number.isSafeInteger(workflowID) || workflowID <= 0) {
+        throw new Error("工作流 ID 必须是正整数");
+    }
+    return workflowID;
 }
 async function main() {
     const program = new Command();
@@ -66,6 +92,7 @@ async function main() {
             configPath: configPath(),
             apiKey: maskKey(c.apiKey),
             baseUrl: c.baseUrl ?? DEFAULT_BASE,
+            workflowBaseUrl: c.workflowBaseUrl ?? DEFAULT_WORKFLOW_BASE,
         }, null, 2));
     });
     const authCmd = program
@@ -103,6 +130,96 @@ async function main() {
             console.error("OAuth 登录失败：", e.message);
             process.exitCode = 1;
         }
+    });
+    const workflowCmd = program
+        .command("workflow")
+        .description("千图工作流：列出、读取、创建、保存与运行工作流");
+    const workflowList = workflowCmd
+        .command("list")
+        .description("列出当前用户可访问的工作流");
+    addWorkflowOpts(workflowList);
+    workflowList
+        .option("--page <n>", "页码", "1")
+        .option("--page-size <n>", "每页数量", "20")
+        .option("--keyword <text>", "按名称搜索")
+        .action(async (opts) => {
+        const file = await loadConfig();
+        const ctx = await getCtx(opts, file);
+        const query = new URLSearchParams({ page: opts.page, page_size: opts.pageSize });
+        if (opts.keyword)
+            query.set("keyword", opts.keyword);
+        const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, `?${query.toString()}`, { method: "GET" });
+        printEnvelope(fmtOf(opts.format), result.http, result.body, true);
+    });
+    const workflowGet = workflowCmd
+        .command("get")
+        .description("读取工作流及其画布定义")
+        .argument("<id>", "工作流 ID");
+    addWorkflowOpts(workflowGet);
+    workflowGet.option("--version <id>", "指定历史画布版本").action(async (id, opts) => {
+        const file = await loadConfig();
+        const ctx = await getCtx(opts, file);
+        const workflowID = parseWorkflowID(id);
+        const suffix = opts.version ? `?version=${encodeURIComponent(opts.version)}` : "";
+        const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, `/${workflowID}${suffix}`, { method: "GET" });
+        printEnvelope(fmtOf(opts.format), result.http, result.body, true);
+    });
+    const workflowCreate = workflowCmd
+        .command("create")
+        .description("创建工作流；可从画布 JSON 初始化")
+        .argument("<name>", "工作流名称");
+    addWorkflowOpts(workflowCreate);
+    workflowCreate
+        .option("-d, --description <text>", "工作流描述", "")
+        .option("--canvas-file <path>", "包含 nodes / edges 的 JSON 文件")
+        .action(async (name, opts) => {
+        const file = await loadConfig();
+        const ctx = await getCtx(opts, file);
+        const body = { name, description: opts.description };
+        if (opts.canvasFile) {
+            Object.assign(body, parseJSONObject(await readFile(opts.canvasFile, "utf8"), "--canvas-file"));
+            // 命令行必填名称优先，避免画布文件中的旧名称覆盖新工作流名称。
+            body.name = name;
+            if (opts.description)
+                body.description = opts.description;
+        }
+        const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, "", { method: "POST", jsonBody: body });
+        printEnvelope(fmtOf(opts.format), result.http, result.body, true);
+    });
+    const workflowSave = workflowCmd
+        .command("save")
+        .description("保存完整画布；文件必须包含当前 nodes，建议同时包含 edges")
+        .argument("<id>", "工作流 ID");
+    addWorkflowOpts(workflowSave);
+    workflowSave.requiredOption("--canvas-file <path>", "完整画布 JSON 文件").action(async (id, opts) => {
+        const file = await loadConfig();
+        const ctx = await getCtx(opts, file);
+        const workflowID = parseWorkflowID(id);
+        const body = parseJSONObject(await readFile(opts.canvasFile, "utf8"), "--canvas-file");
+        const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, `/${workflowID}/canvas`, { method: "POST", jsonBody: body });
+        printEnvelope(fmtOf(opts.format), result.http, result.body, true);
+    });
+    const workflowRun = workflowCmd
+        .command("run")
+        .description("运行整个工作流或指定节点")
+        .argument("<id>", "工作流 ID");
+    addWorkflowOpts(workflowRun);
+    workflowRun
+        .option("--node <id>", "只运行指定节点")
+        .option("--input <json>", "运行输入 JSON", "{}")
+        .option("--regular-model", "使用常规模型", false)
+        .action(async (id, opts) => {
+        const file = await loadConfig();
+        const ctx = await getCtx(opts, file);
+        const body = {
+            workflow_id: parseWorkflowID(id),
+            input: parseJSONObject(opts.input, "--input"),
+            use_regular_model: opts.regularModel,
+        };
+        if (opts.node)
+            body.target_node_id = opts.node;
+        const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, "/execute", { method: "POST", jsonBody: body });
+        printEnvelope(fmtOf(opts.format), result.http, result.body, true);
     });
     authCmd
         .command("logout")

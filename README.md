@@ -29,6 +29,7 @@
 | 下载 | 按 `pid` 取预览与下载临时链（涉及扣点，以平台规则为准） |
 | 生图 / 做同款 | 提交任务、查询状态（文生图无需垫图）；支持比例参数；复杂 body 可用 `--body-file` |
 | 视频生成 | 文生视频 / 图生视频，支持比例 / 清晰度 / 时长 / 结束帧 |
+| 工作流 | 列出、读取、创建、完整保存、运行可编辑工作流画布 |
 | 通用 | 任意 `open-platform/` 路由 + JSON 体或 GET 查询参数 |
 
 ## 环境要求
@@ -95,6 +96,23 @@
 58pic download <pid>
 ```
 
+## 工作流快速开始
+
+工作流命令复用上面的 OAuth 登录或 API Key 配置，无需额外设置。
+
+```bash
+# 查看自己可访问的工作流，并先读取真实画布
+58pic workflow list --format json
+58pic workflow get <workflow-id> --format json
+
+# 创建、完整保存、运行
+58pic workflow create "春日活动海报" --format json
+58pic workflow save <workflow-id> --canvas-file ./canvas.json --format json
+58pic workflow run <workflow-id> --input '{"prompt":"春日上新海报"}' --format json
+```
+
+`workflow save` 的 JSON 文件必须含完整 `nodes`（建议同时含完整 `edges`）。先 `workflow get`，再对最小字段修改并保存；保留 `data.customeData`（历史拼写）、`parentId`、边的句柄字段与分组坐标关系。完整规则见 [58pic-workflow Skill 教程](https://github.com/58pic-open/skills/tree/main/58pic-workflow)。
+
 ## 快速开始（AI Agent）
 
 以下步骤面向 AI Agent（Cursor、Claude Code 等）。认证支持 **OAuth 浏览器登录**与 **API Key** 两种方式；若已配置好，可从「验证」一步开始。
@@ -137,6 +155,12 @@ npx skills add 58pic-open/cli -y -g
 | **Skill 源文件** | [`skills/58pic/SKILL.md`](skills/58pic/SKILL.md)，frontmatter 中 `name` 为 **`58pic`**（供 `npx skills add … --skill 58pic` 使用）。 |
 | **运行时** | Agent 仍通过 **终端执行 `58pic …`** 调开放平台；Skill 只提供结构化指令，不替代 CLI 二进制。 |
 | **离线 / 手动** | 若无法使用 `npx skills`，可将 `skills/58pic/` **复制或软链**到 Cursor 的 `.cursor/skills/`（或各 Agent 文档中的 skills 目录）。 |
+
+工作流配套 Skill 为 [`skills/58pic-workflow/SKILL.md`](skills/58pic-workflow/SKILL.md)，可单独安装：
+
+```bash
+npx skills add 58pic-open/cli --skill 58pic-workflow -y -g
+```
 
 ## 安装
 
@@ -207,6 +231,8 @@ npx skills add 58pic-open/cli -y -g
 npx skills add 58pic-open/cli --list
 
 npx skills add 58pic-open/cli --skill 58pic -y -g
+
+npx skills add 58pic-open/cli --skill 58pic-workflow -y -g
 
 npx skills add 58pic-open/cli --skill 58pic -y -g -a cursor
 ```

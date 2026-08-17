@@ -1,4 +1,5 @@
 export declare const DEFAULT_BASE = "https://ai.58pic.com/api";
+export declare const DEFAULT_WORKFLOW_BASE = "https://workflow-api.58pic.com/api";
 /** OAuth 登录后持久化的 token 信息 */
 export type OAuthTokens = {
     /** 注册的 OAuth client_id */
@@ -13,6 +14,8 @@ export type OAuthTokens = {
 export type Pic58Config = {
     apiKey?: string;
     baseUrl?: string;
+    /** 工作流 API 根地址；通常无需修改。 */
+    workflowBaseUrl?: string;
     /** OAuth 登录后写入，优先级高于 apiKey */
     oauth?: OAuthTokens;
 };

@@ -111,7 +111,7 @@
 58pic workflow run <workflow-id> --input '{"prompt":"春日上新海报"}' --format json
 ```
 
-`workflow save` 的 JSON 文件必须含完整 `nodes`（建议同时含完整 `edges`）。先 `workflow get`，再对最小字段修改并保存；保留 `data.customeData`（历史拼写）、`parentId`、边的句柄字段与分组坐标关系。完整规则见 [58pic-workflow Skill 教程](https://github.com/58pic-open/skills/tree/main/58pic-workflow)。
+`workflow save` 的 JSON 文件必须含完整 `nodes`（建议同时含完整 `edges`）。先 `workflow get`，再对最小字段修改并保存；保留 `data.customeData`（历史拼写）、`parentId`、边的句柄字段与分组坐标关系。完整规则见 [千图工作流 CLI 使用指南](https://58pic-qiye.feishu.cn/docx/OIA4dBDgVomVLxxVYJgcYfeonyb)。
 
 ## 快速开始（AI Agent）
 

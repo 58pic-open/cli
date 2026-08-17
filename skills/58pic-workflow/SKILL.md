@@ -30,4 +30,4 @@ description: >-
 
 先 `get` 再编辑。完整保存时保留所有 `nodes`、`edges`、`data.customeData`（历史拼写，不能改成 `customData`）、`parentId` 和坐标。组父节点为 `type: "group"`；组内子节点的位置相对父组，不能混用绝对坐标。
 
-`create`、`save`、`run` 会创建、更新或执行工作流，运行还可能消耗积分；先告知用户。完整用法见 [58pic-workflow 教程](https://github.com/58pic-open/skills/tree/main/58pic-workflow)。
+`create`、`save`、`run` 会创建、更新或执行工作流，运行还可能消耗积分；先告知用户。完整用法见 [千图工作流 CLI 使用指南](https://58pic-qiye.feishu.cn/docx/OIA4dBDgVomVLxxVYJgcYfeonyb)。

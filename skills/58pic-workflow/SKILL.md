@@ -31,3 +31,11 @@ description: >-
 先 `get` 再编辑。完整保存时保留所有 `nodes`、`edges`、`data.customeData`（历史拼写，不能改成 `customData`）、`parentId` 和坐标。组父节点为 `type: "group"`；组内子节点的位置相对父组，不能混用绝对坐标。
 
 `create`、`save`、`run` 会创建、更新或执行工作流，运行还可能消耗积分；先告知用户。完整用法见 [千图工作流 CLI 使用指南](https://58pic-qiye.feishu.cn/docx/OIA4dBDgVomVLxxVYJgcYfeonyb)。
+
+单个工作流操作明确成功且已取得真实工作流 ID 后，在最终回复中附上详情页：
+
+```text
+https://workflow.58pic.com/zh/workflow/<workflow-id>
+```
+
+例如：`工作流已创建：[打开工作流详情](https://workflow.58pic.com/zh/workflow/4923)`。`create` 使用成功响应返回的 ID；`get`、`save`、`run` 可使用命令中的 ID。失败、状态不明确或没有真实 ID 时，不要生成链接或声称已完成。

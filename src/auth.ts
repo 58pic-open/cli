@@ -163,20 +163,40 @@ interface CallbackServer {
   port: number;
   /** 等待浏览器回调，返回 authorization_code */
   waitForCode: (expectedState: string, timeoutMs?: number) => Promise<string>;
+  /** 关闭本地回调服务器，避免 CLI 在登录完成后继续挂起。 */
+  close: () => Promise<void>;
 }
 
 function createCallbackServer(): Promise<CallbackServer> {
   return new Promise((resolve, reject) => {
     const server = createServer();
+    let closePromise: Promise<void> | undefined;
+
+    const close = (): Promise<void> => {
+      if (closePromise) return closePromise;
+      closePromise = new Promise((done) => {
+        if (!server.listening) {
+          done();
+          return;
+        }
+        server.close(() => done());
+        // Node 18+ 支持主动关闭空闲连接；兼容旧版本时忽略即可。
+        server.closeAllConnections?.();
+      });
+      return closePromise;
+    };
 
     server.listen(0, "127.0.0.1", () => {
       const addr = server.address();
       if (!addr || typeof addr === "string") {
-        server.close();
+        void close();
         reject(new Error("无法绑定本地回调端口"));
         return;
       }
       const port = addr.port;
+
+      // 回调服务器只在等待授权时需要保持进程存活；授权完成后不应阻止 CLI 退出。
+      server.unref();
 
       const waitForCode = (
         expectedState: string,
@@ -184,8 +204,9 @@ function createCallbackServer(): Promise<CallbackServer> {
       ): Promise<string> =>
         new Promise((res, rej) => {
           const timer = setTimeout(() => {
-            server.close();
-            rej(new Error("OAuth 授权超时（2 分钟），请重试"));
+            void close().finally(() => {
+              rej(new Error("OAuth 授权超时（2 分钟），请重试"));
+            });
           }, timeoutMs);
 
           server.on("request", (req, resp) => {
@@ -212,27 +233,28 @@ function createCallbackServer(): Promise<CallbackServer> {
                 const msg = error
                   ? `授权失败：${error}${errorDesc ? " — " + errorDesc : ""}`
                   : "无效的回调参数";
-                resp.end(callbackHtml({ success: false, message: msg }));
+                resp.setHeader("Connection", "close");
                 clearTimeout(timer);
-                server.close();
-                rej(new Error(msg));
+                resp.end(callbackHtml({ success: false, message: msg }), () => {
+                  void close().finally(() => rej(new Error(msg)));
+                });
                 return;
               }
 
-              resp.end(callbackHtml({ success: true }));
+              resp.setHeader("Connection", "close");
               clearTimeout(timer);
-              server.close();
-              res(code);
+              resp.end(callbackHtml({ success: true }), () => {
+                void close().finally(() => res(code));
+              });
             } catch (e) {
               resp.writeHead(500).end();
               clearTimeout(timer);
-              server.close();
-              rej(e);
+              void close().finally(() => rej(e));
             }
           });
         });
 
-      resolve({ port, waitForCode });
+      resolve({ port, waitForCode, close });
     });
 
     server.on("error", reject);
@@ -439,20 +461,25 @@ export async function loginWithOAuth(
 
   // 6. 等待用户在浏览器中完成授权
   process.stderr.write("等待授权完成（2 分钟超时）…\n");
-  const code = await cbServer.waitForCode(state);
+  try {
+    const code = await cbServer.waitForCode(state);
 
-  // 7. 用 code 换 token
-  process.stderr.write("正在获取 token…\n");
-  const tokens = await exchangeCode(
-    endpoints.token,
-    code,
-    clientId,
-    redirectUri,
-    pkce.verifier
-  );
+    // 7. 用 code 换 token
+    process.stderr.write("正在获取 token…\n");
+    const tokens = await exchangeCode(
+      endpoints.token,
+      code,
+      clientId,
+      redirectUri,
+      pkce.verifier
+    );
 
-  // 8. 持久化
-  await saveConfig({ oauth: tokens });
+    // 8. 持久化
+    await saveConfig({ oauth: tokens });
 
-  return tokens;
+    return tokens;
+  } finally {
+    // 无论换 token 成功或失败，都确保本地端口不再占用。
+    await cbServer.close();
+  }
 }

@@ -113,7 +113,7 @@
 
 `workflow save` 的 JSON 文件必须含完整 `nodes`（建议同时含完整 `edges`）。先 `workflow get`，再对最小字段修改并保存；保留 `data.customeData`（历史拼写）、`parentId`、边的句柄字段与分组坐标关系。完整规则见 [千图工作流 CLI 使用指南](https://58pic-qiye.feishu.cn/docx/OIA4dBDgVomVLxxVYJgcYfeonyb)。
 
-单个工作流操作成功后，可用真实工作流 ID 打开详情页：`https://workflow.58pic.com/zh/workflow/<workflow-id>`。例如：[工作流 4923](https://workflow.58pic.com/zh/workflow/4923)。创建时以成功响应返回的 ID 为准；失败、状态不明确或没有真实 ID 时不要拼接详情页链接。
+工作流 ID 是公开的不透明字符串，可能是字母数字混合的 hashid，也兼容历史数字 ID。请原样使用 `workflow list` 返回的值，不要转成整数或自行拼接。单个工作流操作成功后，可用真实工作流 ID 打开详情页：`https://workflow.58pic.com/zh/workflow/<workflow-id>`。例如：[工作流 1tvy7hfevfc34](https://workflow.58pic.com/zh/workflow/1tvy7hfevfc34)。创建时以成功响应返回的 ID 为准；失败、状态不明确或没有真实 ID 时不要拼接详情页链接。
 
 ## 快速开始（AI Agent）
 

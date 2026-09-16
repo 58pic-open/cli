@@ -73,11 +73,13 @@ function parseJSONObject(raw: string, flagName: string): Record<string, unknown>
   return value as Record<string, unknown>;
 }
 
-function parseWorkflowID(id: string): number {
-  if (!/^\d+$/.test(id)) throw new Error("工作流 ID 必须是正整数");
-  const workflowID = Number(id);
-  if (!Number.isSafeInteger(workflowID) || workflowID <= 0) {
-    throw new Error("工作流 ID 必须是正整数");
+function parseWorkflowID(id: string): string {
+  // 公开工作流 ID 是不透明标识符，可能是字母数字混合的 hashid。
+  // 只做路径安全校验，不转换成 Number，避免精度丢失或误拒绝混淆 ID。
+  const workflowID = id.trim();
+  if (!workflowID) throw new Error("工作流 ID 不能为空");
+  if (/[\s/?#]/.test(workflowID)) {
+    throw new Error("工作流 ID 不能包含空白、/、? 或 #");
   }
   return workflowID;
 }
@@ -218,7 +220,7 @@ async function main(): Promise<void> {
     const ctx = await getCtx(opts, file);
     const workflowID = parseWorkflowID(id);
     const suffix = opts.version ? `?version=${encodeURIComponent(opts.version)}` : "";
-    const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, `/${workflowID}${suffix}`, { method: "GET" });
+    const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, `/${encodeURIComponent(workflowID)}${suffix}`, { method: "GET" });
     printEnvelope(fmtOf(opts.format), result.http, result.body, true);
   });
 
@@ -254,7 +256,7 @@ async function main(): Promise<void> {
     const ctx = await getCtx(opts, file);
     const workflowID = parseWorkflowID(id);
     const body = parseJSONObject(await readFile(opts.canvasFile, "utf8"), "--canvas-file");
-    const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, `/${workflowID}/canvas`, { method: "POST", jsonBody: body });
+    const result = await workflowRequest({ apiKey: ctx.apiKey, workflowBaseUrl: workflowBaseOf(opts, file) }, `/${encodeURIComponent(workflowID)}/canvas`, { method: "POST", jsonBody: body });
     printEnvelope(fmtOf(opts.format), result.http, result.body, true);
   });
 

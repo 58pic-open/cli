@@ -28,6 +28,8 @@ description: >-
 58pic workflow run <workflow-id> --input '{"prompt":"春日海报"}' --format json
 ```
 
+`<workflow-id>` 是公开的不透明字符串，可能包含字母和数字（例如 `1tvy7hfevfc34`），也兼容历史数字 ID。请原样使用 `workflow list` 返回的值，不要转成整数或自行拼接；`get`、`save`、`run` 和详情页链接必须使用同一个 ID。
+
 先 `get` 再编辑。完整保存时保留所有 `nodes`、`edges`、`data.customeData`（历史拼写，不能改成 `customData`）、`parentId` 和坐标。组父节点为 `type: "group"`；组内子节点的位置相对父组，不能混用绝对坐标。
 
 `create`、`save`、`run` 会创建、更新或执行工作流，运行还可能消耗积分；先告知用户。完整用法见 [千图工作流 CLI 使用指南](https://58pic-qiye.feishu.cn/docx/OIA4dBDgVomVLxxVYJgcYfeonyb)。
@@ -38,4 +40,4 @@ description: >-
 https://workflow.58pic.com/zh/workflow/<workflow-id>
 ```
 
-例如：`工作流已创建：[打开工作流详情](https://workflow.58pic.com/zh/workflow/4923)`。`create` 使用成功响应返回的 ID；`get`、`save`、`run` 可使用命令中的 ID。失败、状态不明确或没有真实 ID 时，不要生成链接或声称已完成。
+例如：`工作流已创建：[打开工作流详情](https://workflow.58pic.com/zh/workflow/1tvy7hfevfc34)`。`create` 使用成功响应返回的 ID；`get`、`save`、`run` 可使用命令中的 ID。失败、状态不明确或没有真实 ID 时，不要生成链接或声称已完成。

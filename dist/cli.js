@@ -7,6 +7,7 @@ import { Command } from "commander";
 import { loadConfig, saveConfig, clearOAuth, maskKey, configPath, DEFAULT_BASE, DEFAULT_WORKFLOW_BASE, } from "./config.js";
 import { pic58Request, resolveCredentials, routeUrl } from "./client.js";
 import { workflowRequest } from "./workflow.js";
+import { DEFAULT_DESIGN_AGENT_BASE, GENERAL_DESIGN_AGENT_KEY, composeMessage, createSession, listDesignAgents, streamTurn, submitTask, turnStatus, } from "./design-agent.js";
 import { loginWithOAuth, revokeToken } from "./auth.js";
 import { printEnvelope } from "./output.js";
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
@@ -508,6 +509,179 @@ async function main() {
             jsonBody: body,
         });
         printEnvelope(fmtOf(opts.format), http, resp, true);
+    });
+    // ── MiniApp（风格玩法 / AI 应用）────────────────────────────────────────
+    const miniapp = program
+        .command("miniapp")
+        .description("MiniApp 风格玩法：list 列表 / get 详情与输入要求 / run 运行（返回 ai_id，用 same-style-status 查结果）");
+    const miniappList = miniapp
+        .command("list")
+        .description("列出 / 搜索可运行的 MiniApp")
+        .option("-k, --keyword <text>", "关键词（名称 / 描述 / 标签）")
+        .option("--kind <kind>", "same_style | template | model | workflow")
+        .option("--sort <s>", "hot | new", "hot")
+        .option("--page <n>", "页码", "1")
+        .option("--limit <n>", "每页条数（≤50）", "20");
+    addGlobalOpts(miniappList);
+    miniappList.action(async (opts) => {
+        const kindMap = { same_style: 2, template: 3, model: 4, workflow: 5 };
+        if (opts.kind && !(opts.kind in kindMap))
+            throw new Error(`--kind 仅支持 ${Object.keys(kindMap).join(" | ")}`);
+        const ctx = await getCtx(opts, await loadConfig());
+        const { http, body } = await pic58Request(ctx, "miniapp-list", {
+            method: "POST",
+            jsonBody: {
+                keyword: opts.keyword ?? "",
+                sort: opts.sort === "new" ? 2 : 1,
+                ai_type: opts.kind ? kindMap[opts.kind] : 0,
+                page: Number(opts.page) || 1,
+                limit: Number(opts.limit) || 20,
+            },
+        });
+        printEnvelope(fmtOf(opts.format), http, body, true);
+    });
+    const miniappGet = miniapp
+        .command("get")
+        .description("MiniApp 详情：needs_reference_image / prompt_template / prompt_slots / guide / sample_media")
+        .argument("<miniapp_id>", "miniapp_id、slug 或 https://ai.58pic.com/app/xxx 链接");
+    addGlobalOpts(miniappGet);
+    miniappGet.action(async (id, opts) => {
+        const ctx = await getCtx(opts, await loadConfig());
+        const { http, body } = await pic58Request(ctx, "miniapp-detail", { method: "POST", jsonBody: { miniapp_id: id } });
+        printEnvelope(fmtOf(opts.format), http, body, true);
+    });
+    const miniappRun = miniapp
+        .command("run")
+        .description("运行 MiniApp（扣点）；返回 ai_id，之后 58pic same-style-status <ai_id>")
+        .argument("<miniapp_id>", "miniapp_id、slug 或详情页链接")
+        .argument("[prompt...]", "提示词（可选；模板类按 prompt_template 填槽）")
+        .option("--prompt <text>", "提示词（与位置参数并存时本选项优先）")
+        .option("--reference-url <url...>", "参考图 URL（可多个）")
+        .option("--aspect <id>", "比例 attr id（见 model-capabilities）")
+        .option("-m, --model <id>", "仅同款 / 模板类可覆盖模型")
+        .option("--nums <n>", "生成数量 1-16", "1");
+    addGlobalOpts(miniappRun);
+    miniappRun.action(async (id, promptParts, opts) => {
+        const ctx = await getCtx(opts, await loadConfig());
+        const prompt = (opts.prompt ?? "").trim() || (promptParts ?? []).join(" ").trim();
+        const body = { miniapp_id: id, generate_nums: Number(opts.nums) || 1 };
+        if (prompt)
+            body.prompt = prompt;
+        const refs = opts.referenceUrl ?? [];
+        if (refs.length === 1)
+            body.reference_image_url = refs[0];
+        else if (refs.length > 1)
+            body.reference_image_urls = refs;
+        if (opts.aspect)
+            body.Aspect = opts.aspect;
+        if (opts.model)
+            body.model = Number(opts.model);
+        const { http, body: resp } = await pic58Request(ctx, "miniapp-run", { method: "POST", jsonBody: body });
+        printEnvelope(fmtOf(opts.format), http, resp, true);
+    });
+    // ── 智能设计行业 Agent ─────────────────────────────────────────────────
+    const agentCmd = program
+        .command("agent")
+        .description("智能设计 Agent：list 行业 Agent / run 发起设计 / status 查询 / reply 回答追问或改稿");
+    const agentCtx = async (opts) => {
+        const ctx = await getCtx(opts, await loadConfig());
+        return {
+            ...ctx,
+            agentBaseUrl: opts.agentBaseUrl ?? process.env["PIC58_DESIGN_AGENT_BASE_URL"] ?? DEFAULT_DESIGN_AGENT_BASE,
+        };
+    };
+    const addAgentOpts = (cmd) => addGlobalOpts(cmd).option("--agent-base-url <url>", `智能设计 Agent 根地址，默认 ${DEFAULT_DESIGN_AGENT_BASE}`);
+    const printTurn = (fmt, r) => {
+        const next = r.status === "running"
+            ? `稍后执行：58pic agent status ${r.session_id}`
+            : r.status === "awaiting_user"
+                ? `回答追问：58pic agent reply ${r.session_id} "<你的回答>"`
+                : r.status === "succeeded"
+                    ? `继续改稿：58pic agent reply ${r.session_id} "<修改意见>"`
+                    : undefined;
+        const out = { ...r, ...(next ? { next } : {}) };
+        console.log(fmt === "json" ? JSON.stringify(out) : JSON.stringify(out, null, 2));
+        if (r.status === "failed")
+            process.exitCode = 1;
+    };
+    const parseParams = (pairs) => {
+        const out = {};
+        for (const raw of pairs ?? []) {
+            const i = raw.indexOf("=");
+            if (i <= 0)
+                throw new Error(`--param 格式应为 key=value（多选用逗号分隔），收到：${raw}`);
+            const k = raw.slice(0, i).trim();
+            const v = raw.slice(i + 1).trim();
+            out[k] = v.includes(",") || v.includes("，") ? v.split(/[,，]/).map((x) => x.trim()).filter(Boolean) : v;
+        }
+        return out;
+    };
+    const agentList = agentCmd.command("list").description("列出行业 Agent、子模式与表单参数");
+    addAgentOpts(agentList);
+    agentList.action(async (opts) => {
+        const { http, body } = await listDesignAgents(await agentCtx(opts));
+        console.log(fmtOf(opts.format) === "json" ? JSON.stringify(body) : JSON.stringify(body, null, 2));
+        if (http >= 400)
+            process.exitCode = 1;
+    });
+    const agentRun = agentCmd
+        .command("run")
+        .description("发起智能设计（扣点）。等待 --wait 秒；未完成时 Agent 后台继续，用 agent status 查询")
+        .argument("<prompt...>", "设计需求")
+        .option("-a, --agent <key>", `行业 Agent key（agent list 查看；默认 ${GENERAL_DESIGN_AGENT_KEY} 全能 Agent）`)
+        .option("--mode <name>", "子模式名（second_modes[].name；默认第一个）")
+        .option("-p, --param <key=value...>", "子模式参数，可多次；多选用逗号分隔")
+        .option("-i, --image <url...>", "参考图 URL（可多个）")
+        .option("--wait <sec>", "最长等待秒数", "60");
+    addAgentOpts(agentRun);
+    agentRun.action(async (promptParts, opts) => {
+        const ctx = await agentCtx(opts);
+        const prompt = promptParts.join(" ").trim();
+        let message = prompt;
+        let modeKey;
+        if (opts.agent && opts.agent !== GENERAL_DESIGN_AGENT_KEY) {
+            const { body } = await listDesignAgents(ctx);
+            const agents = (Array.isArray(body.agents) ? body.agents : []);
+            const agent = agents.find((a) => a.key === opts.agent);
+            if (!agent)
+                throw new Error(`Agent "${opts.agent}" 不存在，可用：${agents.map((a) => a.key).join(", ")}`);
+            const modes = agent.second_modes ?? [];
+            const mode = (opts.mode ? modes.find((m) => m.name === opts.mode) : undefined) ?? modes[0];
+            if (opts.mode && mode?.name !== opts.mode)
+                throw new Error(`子模式 "${opts.mode}" 不存在，可选：${modes.map((m) => m.name).join(", ")}`);
+            modeKey = agent.key;
+            if (mode)
+                message = composeMessage(agent, mode, parseParams(opts.param), prompt);
+        }
+        const { aiId, aiAppId } = await submitTask(ctx, prompt);
+        const sessionId = await createSession(ctx, prompt, aiId, aiAppId);
+        const r = await streamTurn(ctx, { sessionId, aiId, aiAppId, message, modeKey, imageUrls: opts.image, waitSec: Number(opts.wait) || 60 }, (l) => console.error(l));
+        printTurn(opts.format, r);
+    });
+    const agentStatus = agentCmd.command("status").description("查询会话最新一轮结果").argument("<session_id>");
+    addAgentOpts(agentStatus);
+    agentStatus.action(async (sid, opts) => {
+        printTurn(opts.format, await turnStatus(await agentCtx(opts), sid));
+    });
+    const agentReply = agentCmd
+        .command("reply")
+        .description("同一会话继续：回答 Agent 追问 / 改稿（扣点）")
+        .argument("<session_id>")
+        .argument("<message...>", "回答或修改意见；多步骤追问用「[多步骤选择]\\n问题: 选项」")
+        .option("-i, --image <url...>", "本轮参考图 URL")
+        .option("--wait <sec>", "最长等待秒数", "60");
+    addAgentOpts(agentReply);
+    agentReply.action(async (sid, parts, opts) => {
+        const ctx = await agentCtx(opts);
+        const prev = await turnStatus(ctx, sid);
+        if (prev.status === "running") {
+            printTurn(opts.format, { ...prev, error: "上一轮仍在执行，请稍后再回复" });
+            return;
+        }
+        const message = parts.join(" ").replace(/\\n/g, "\n").trim();
+        const { aiId, aiAppId } = await submitTask(ctx, message);
+        const r = await streamTurn(ctx, { sessionId: sid, aiId, aiAppId, message, imageUrls: opts.image, waitSec: Number(opts.wait) || 60 }, (l) => console.error(l));
+        printTurn(opts.format, r);
     });
     const apiCmd = program
         .command("api")

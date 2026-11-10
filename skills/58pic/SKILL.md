@@ -1,8 +1,10 @@
 ---
 name: 58pic
 description: >-
-  千图（58pic）AI 开放平台 CLI：素材搜索、目录、模型列表、按 pid 下载信息、做同款任务。
-  在用户提到千图/58pic 搜索、生图、文生图、做同款、PID、下载素材时使用；首次使用需完成 config / API Key。
+  千图（58pic）AI 开放平台 CLI：素材搜索、目录、模型列表、按 pid 下载信息、做同款任务、
+  智能设计行业 Agent（电商套图 / 详情页 / 海报 / 品牌 / 社媒 / PPT）、MiniApp 风格玩法。
+  在用户提到千图/58pic 搜索、生图、文生图、做同款、PID、下载素材、智能设计、电商设计、商品套图、
+  风格玩法、MiniApp 时使用；首次使用需完成 config / API Key。
   若无 API Key，引导用户至千图 AI 开放平台页面获取。
 ---
 
@@ -53,7 +55,19 @@ npx skills add 58pic-open/cli -y -g
 | 按 pid 拉取下载信息 | `58pic download <pid> --format json` |
 | 生图 / 文生图 / 做同款 | `58pic same-style --help`（需 `-m/--model`；文生图无需垫图，用 `--prompt` 或命令末尾描述词；复杂 body 用 `--body-file`） |
 | 任务状态 | `58pic same-style-status <ai_id> --format json` |
+| 智能设计行业 Agent 目录 | `58pic agent list --format json` |
+| 智能设计发起（扣点） | `58pic agent run "<需求>" -a <agent_key> --mode "<子模式>" -p 参数=值 -i <图URL> --format json` |
+| 智能设计查询 | `58pic agent status <session_id> --format json` |
+| 回答 Agent 追问 / 改稿（扣点） | `58pic agent reply <session_id> "<回答>" --format json` |
+| MiniApp 列表 / 详情 | `58pic miniapp list -k <关键词> --format json`、`58pic miniapp get <miniapp_id> --format json` |
+| MiniApp 运行（扣点） | `58pic miniapp run <miniapp_id> "<提示词>" --reference-url <图URL> --format json`，再 `same-style-status <ai_id>` |
 | 未封装路由 | `58pic api <route> --body '{...}'` 或 `--body-file` |
+
+### 智能设计 / MiniApp 要点
+
+- `agent run` 先 `agent list` 选 `agent_key` 与 `second_modes[].name`；`-p` 的 select / multi_select 值只能取 `options`；需求文本写在选项前面。
+- 返回 `status`：`running` → 隔 20~30 秒 `agent status`；`awaiting_user` → 把 `ask_user` 原样转述给用户，拿到回答再 `agent reply`；`succeeded` → `images` 为成图。`running` 时不要重新 `agent run`（会重复扣点）。
+- `miniapp get` 的 `needs_reference_image=true` 时必须给参考图；`prompt_template` 里的 `{槽位}` 替换为用户内容后作为提示词。
 
 凭证优先级与环境变量 **`58PIC_API_KEY`**、**`58PIC_BASE_URL`** 见 README（注意 bash/zsh 无法 `export` 以数字开头的变量名，本地优先配置文件或 `--api-key`）。
 

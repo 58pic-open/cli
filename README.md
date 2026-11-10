@@ -30,6 +30,8 @@
 | 生图 / 做同款 | 提交任务、查询状态（文生图无需垫图）；支持比例参数；复杂 body 可用 `--body-file` |
 | 视频生成 | 文生视频 / 图生视频，支持比例 / 清晰度 / 时长 / 结束帧 |
 | 工作流 | 列出、读取、创建、完整保存、运行可编辑工作流画布 |
+| 智能设计 Agent | 行业 Agent（电商 / 海报 / 品牌 / 社媒 / 办公 / 视频）发起设计、查询结果、回答追问 / 改稿 |
+| MiniApp 风格玩法 | 列出 / 查看 / 运行站点「风格玩法」（商品套图、批量换背景、AI 详情页…） |
 | 通用 | 任意 `open-platform/` 路由 + JSON 体或 GET 查询参数 |
 
 ## 环境要求
@@ -342,6 +344,23 @@ Base URL 解析顺序：
 | `58pic same-style-status <ai_id>` | 查询生图任务状态 |
 | `58pic generate-video` | 提交视频生成任务，支持 `--aspect`、`--resolution`、`--duration`、`--end-frame-url` |
 
+**智能设计 Agent（行业 Agent）**
+
+| 命令 | 说明 |
+|------|------|
+| `58pic agent list` | 行业 Agent、子模式（`second_modes`）与表单参数（`params`） |
+| `58pic agent run <需求…> -a <agent> --mode <子模式> -p key=value -i <图URL>` | 发起设计（扣点）；默认等 60 秒，未完成时 Agent 后台继续 |
+| `58pic agent status <session_id>` | 查询最新一轮：`running` / `awaiting_user`（Agent 追问）/ `succeeded` |
+| `58pic agent reply <session_id> <回答或修改意见…>` | 同一会话回答追问 / 改稿（扣点） |
+
+**MiniApp（风格玩法）**
+
+| 命令 | 说明 |
+|------|------|
+| `58pic miniapp list [-k 关键词] [--kind workflow] [--sort new]` | `open-platform/miniapp-list` |
+| `58pic miniapp get <miniapp_id>` | 详情：是否需要参考图、默认提示词与 `{槽位}`、使用步骤、样张 |
+| `58pic miniapp run <miniapp_id> [提示词…] --reference-url <图URL>` | 运行（扣点），返回 `ai_id`，再用 `same-style-status` 查结果 |
+
 查看某命令全部参数：
 
 ```bash
@@ -353,6 +372,18 @@ Base URL 解析顺序：
 58pic same-style -m <模型ID> --prompt "一只水彩风格的猫" --aspect "1:1"
 # 视频生成
 58pic generate-video -m <模型ID> --prompt "城市夜景延时" --aspect "16:9" --resolution "1080p"
+
+# 智能设计：电商 Agent 做亚马逊主图套图（需求写在选项前面；多选参数用逗号）
+58pic agent list --format json
+58pic agent run "保温杯主图套图，卖点24小时保温" -a <电商Agent key> --mode "<子模式>" -p 平台=亚马逊 -p 模块=主图,场景图 -i https://preview.qiantucdn.com/xxx.png
+58pic agent status <session_id>
+58pic agent reply <session_id> "[多步骤选择]\n销售平台: 亚马逊"
+
+# MiniApp 风格玩法
+58pic miniapp list -k 套图 --format json
+58pic miniapp get <miniapp_id> --format json
+58pic miniapp run <miniapp_id> --reference-url https://preview.qiantucdn.com/xxx.png "保温杯"
+58pic same-style-status <ai_id>
 ```
 
 ### 2. 通用 `api`（未封装路由）

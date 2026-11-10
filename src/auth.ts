@@ -225,15 +225,16 @@ function createCallbackServer(): Promise<CallbackServer> {
               const error = url.searchParams.get("error");
               const errorDesc = url.searchParams.get("error_description") ?? "";
 
+              // Connection 必须随 writeHead 一起设置：Node 24 起头已定下后再 setHeader 会抛 ERR_HTTP_HEADERS_SENT
               resp.writeHead(200, {
                 "Content-Type": "text/html; charset=utf-8",
+                Connection: "close",
               });
 
               if (error || !code || returnedState !== expectedState) {
                 const msg = error
                   ? `授权失败：${error}${errorDesc ? " — " + errorDesc : ""}`
                   : "无效的回调参数";
-                resp.setHeader("Connection", "close");
                 clearTimeout(timer);
                 resp.end(callbackHtml({ success: false, message: msg }), () => {
                   void close().finally(() => rej(new Error(msg)));
@@ -241,13 +242,13 @@ function createCallbackServer(): Promise<CallbackServer> {
                 return;
               }
 
-              resp.setHeader("Connection", "close");
               clearTimeout(timer);
               resp.end(callbackHtml({ success: true }), () => {
                 void close().finally(() => res(code));
               });
             } catch (e) {
-              resp.writeHead(500).end();
+              if (!resp.headersSent) resp.writeHead(500);
+              resp.end();
               clearTimeout(timer);
               void close().finally(() => rej(e));
             }
